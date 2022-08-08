@@ -1,0 +1,25 @@
+##### NOTE:
+# These rules define an "init" operator that will be selected once at the start of the agent run.
+# This adds a name to the top WM state.
+# Other files can augment the actions of this operator as desired.
+###########
+
+
+#####
+## OPERATOR: init
+## If the agent hasn't yet initialized, do so.
+## (Use best preference so this happens at as soon as the agent starts up.)
+#####
+
+sp {propose*mario*init
+    (state <s> ^superstate nil      # This is a structure that always exists in the agent's initial working memory
+            -^name)                 # Test that the state name has not yet been initialized
+    -->
+    (<s> ^operator <o> + >)         # Propose with "best" preference so that this operator is selected first 
+    (<o> ^name init)}
+
+sp {apply*mario*init
+    (state <s> ^operator.name init)
+    -->
+    # Initialize the state name
+    (<s> ^name mario)}

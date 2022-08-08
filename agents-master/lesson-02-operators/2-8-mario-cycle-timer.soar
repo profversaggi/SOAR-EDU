@@ -1,0 +1,63 @@
+##### NOTE:
+# These rules define a "timer" that constantly counts up to a target number and then "rings" when it reaches that number.
+# Other rules can check for the "^timer-ringing true" WME on the state to test if the timer is ringing.
+# Except for the (init) operator, this is all processed in parallel in the background alongside whatever other operators the agent is using.
+# The agent can use this timer value in operator proposal conditions so that it only proposes a change in movement after certain intervals of time.
+###########
+
+
+# By convention, we put elaboration rules at the top of the file.
+# This rule creates the "^timer-ringing true" WME that outside rules can test.
+# All other WMEs referenced in this file are only used by the rules in this file.
+sp {elaborate*mario*timer-ringing
+    "If the current decision cycle has reached or passed the timer value, ring the timer"
+    (state <s> ^timer-dc <dc>
+            ^current-dc >= <dc>)
+    -->
+    (<s> ^timer-ringing true)}
+
+
+#####
+## OPERATOR: init [from 2-7-mario-init.soar]
+## Augment the (init) operator with another apply rule that initializes the timer.
+## This apply rule will fire at the same time as the "apply*mario*init" rule defined in 2-7-mario-init.soar.
+#####
+
+sp {apply*mario*init*timer
+    (state <s> ^operator.name init
+            -^timer-dc)
+    -->
+    # Initialize the timer to a number long enough for Mario to make some distance between action choices
+    (<s> ^timer-dc 220
+        ^current-dc 0)}
+
+
+#####
+## OPERATOR: idle-increment-timer / <any>
+## Always increment the current cycle each apply phase.
+## Apply for any operator, but propose an idle-increment-timer operator with worst preference in case nothing else was proposed
+#####
+
+sp {propose*mario*idle-increment-timer
+    "Propose an idle-decrement-timer operator with worst preference in case nothing else was proposed, so the timer can decrement every cycle"
+    (state <s> ^current-dc <dc>)
+    -->
+    (<s> ^operator <o> + < =)               # Use "worst" preference so that other operators can be selected instead of this one
+    (<o> ^name idle-increment-timer)}
+
+sp {apply-any*mario*update-current-dc
+    "Refresh the current decision cycle count"
+    (state <s> ^operator <o-any>
+            ^current-dc <dc>)        # To reference the variable name and also test that it is > 0, enclose both tests inside "{}" brackets
+    -->
+    (<s> ^current-dc <dc> -             # The "-" here tells Soar to remove this WME
+        ^current-dc (dc))}              # The (dc) structure here is a RHS function that gets the current decision cycle number (as an integer).
+
+sp {apply-any*mario*reset-timer-dc
+    "Add 80 cycles to the timer when the timer is complete"
+    (state <s> ^operator <o-any>
+                ^timer-dc <dc>
+                ^current-dc > <dc>)     # To reference the variable name and also test that it is <= 0, enclose both tests inside "{}" brackets
+    -->
+    (<s> ^timer-dc <dc> -
+        ^timer-dc (+ 220 (dc)))}

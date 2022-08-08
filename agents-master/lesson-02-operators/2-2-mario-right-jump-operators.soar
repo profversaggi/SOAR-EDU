@@ -1,0 +1,61 @@
+##### NOTE:
+# This file has rules that define two operators, (move-right) and (jump).
+# Operators are the decisions that an agent selects each decision cycle.
+# The agent selects an operator to apply from among all the operators proposed each cycle.
+# Both these operators are given "indifferent" preference, which means that, if both are proposed together, the agent will choose between them randomly.
+###########
+
+
+#####
+## OPERATOR: move-right
+## Move Mario to the right by pressing the "right" key
+#####
+
+sp {propose*mario*move-right
+    "This rule proposes the (move-right) operator when Mario is not falling"
+    (state <s> ^io.output-link <ol>)        # Notice the shorter "dot notation" that we can use to referece the output link
+    (<ol> -^key-press.value right)          # The minus symbol means this is a negative condition: We test that the output-link does NOT already have a move-right command
+    -->
+    # This action proposes a new operator named "move-right". 
+    # (The "operator" attribute is a special keyword for Soar.)
+    # The '+' symbol means "acceptable preference", which is the basic preference when proposing any operator - it will be up to the agent's decision making whether this operator gets selected or not.
+    # The '=' symbol means "indifferent preference". The agent will select an operator randomly if they all have the '=' preference
+    (<s> ^operator <o> + =)
+    (<o> ^name move-right)}
+
+sp {apply*mario*move-right
+    "This rule applies the (move-right) operator by sending the [key-press.value right] command to the environment"
+    (state <s> ^operator.name move-right    # This tests that (move-right) is currently selected as the operator
+            ^io.output-link <ol>)
+    -->
+    # This action creates a new command on the output-link which tells Mario to move to the right
+    (<ol> ^key-press <kp-new>)
+    (<kp-new> ^value right)}
+
+
+#####
+## OPERATOR: jump
+## Make Mario jump by pressing the "A" (jump) key
+#####
+
+sp {propose*mario*jump
+    "This rule proposes the (jump) operator when Mario is not falling"
+    (state <s> ^io.output-link <ol>     # Notice the shorter "dot notation" that we can use to referece the output link
+            ^mario-on-ground true)      # Test that Mario is on the ground (He can't jump otherwise anyway)
+    (<ol> -^key-press.value A)          # The minus symbol means this is a negative condition: We test that the output-link does NOT already have a jump command
+    -->
+    # This action proposes a new operator named "jump". 
+    # (The "operator" attribute is a special keyword for Soar.)
+    # The '+' symbol means "acceptable preference", which is the basic preference when proposing any operator - it will be up to the agent's decision making whether this operator gets selected or not.
+    # The '=' symbol means "indifferent preference". The agent will select an operator randomly if they all have the '=' preference
+    (<s> ^operator <o> + =)
+    (<o> ^name jump)}
+
+sp {apply*mario*jump
+    "This rule applies the (jump) operator by sending the [key-press.value A] command to the environment"
+    (state <s> ^operator.name jump      # This tests that (jump) is currently selected as the operator
+            ^io.output-link <ol>)
+    -->
+    # This action creates a new command on the output-link which tells Mario to jump (by pressing the 'A' key)
+    (<ol> ^key-press <kp-new>)
+    (<kp-new> ^value A)}

@@ -1,0 +1,31 @@
+##### NOTE:
+# This file adds the (move-left) operator so that Mario can backtrack when he gets stuck.
+# You'll find you'll need other rules too so that Mario doesn't just rapidly flip back and forth between left and right and not go anywhere!
+###########
+
+
+#####
+## OPERATOR: move-left
+## Move Mario to the left by pressing the "left" key
+#####
+
+sp {propose*mario*move-left
+    "This rule proposes the (move-left) operator when Mario is not falling"
+    (state <s> ^io.output-link <ol>)        # Notice the shorter "dot notation" that we can use to referece the output link
+    (<ol> -^key-press.value left)           # Test that the output-link does NOT already have a move-left command
+    -->
+    # This action proposes a new operator named "move-left". 
+    # (The "operator" attribute is a special keyword for Soar.)
+    # The '+' symbol means "acceptable preference", which is the basic preference when proposing any operator - it will be up to the agent's decision making whether this operator gets selected or not.
+    # The '=' symbol means "indifferent preference". The agent will select an operator randomly if they all have the '=' preference
+    (<s> ^operator <o> + =)
+    (<o> ^name move-left)}
+
+sp {apply*mario*move-left
+    "This rule applies the (move-left) operator by sending the [key-press.value left] command to the environment"
+    (state <s> ^operator.name move-left     # This tests that (move-left) is currently selected as the operator
+            ^io.output-link <ol>)
+    -->
+    # This action creates a new command on the output-link which tells Mario to move to the left
+    (<ol> ^key-press <kp-new>)
+    (<kp-new> ^value left)}

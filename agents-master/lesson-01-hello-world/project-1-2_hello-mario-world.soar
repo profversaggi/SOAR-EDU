@@ -1,0 +1,9 @@
+sp {elaborate*mario*hello-world
+    "This rule prints the hello world message in the Mario world environment."
+    # This condition references the output-link, which is always there in working memory
+    (state <s> ^io.output-link <ol>)
+    -->
+    # This action creates a new memory node (a new memory ID), connected to the output-link node by an edge labeled "message"
+    (<ol> ^message <message-new>)
+    # This action creates a new string value "Hello World!", connected to the new node by an edge labeled "value"
+    (<message-new> ^value |Hello World!|)}

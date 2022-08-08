@@ -1,0 +1,6 @@
+sp {elaboration*hello-world
+    "This rule prints the hello world message and then stops the agent."
+    (state <s> ^superstate nil)
+    -->
+    (write |Hello World!|)
+    (interrupt)}

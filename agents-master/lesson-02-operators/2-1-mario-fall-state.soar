@@ -1,0 +1,55 @@
+##### NOTE:
+# These "elaboration" rules fire in the background in parallel and constantly update Mario's working memory to match his environment.
+# When the conditions of an elaboration rule are satisfied, the rule's actions are carried out to add structures to Mario's working memory.
+# As soon as the conditions of an elaboration rule are no longer satisfied, any structures that rule had created in working memory are immediately removed, or "retracted".
+# In this case, if (and only if) Mario's vertical speed is > 0, the first two rules will report that he is falling.
+# The first rule creates a structure in working memory that records that Mario is falling. The second rule sends a corresponding message to be printed on the game screen.
+# And if (and only if) Mario's vertical speed is == 0, the last two rules will report that Mario is on the ground.
+###########
+
+
+### Elaborate: mario-is-falling ###
+
+sp {elaborate*mario*falling
+    "This rule prints a message in the Mario world environment when Mario is falling."
+    (state <s> ^io <io>)
+    (<io> ^input-link <il>)
+    # This condition tests that Mario's vertical speed is > 0, which means he is falling
+    (<il> ^mario.body.y-speed > 0.0)
+    -->
+    # Elaborate a structure in working memory that indicates that Mario is falling
+    (<s> ^mario-is-falling true)}
+
+sp {elaborate*mario*output-message*falling
+    "This rule prints a message in the Mario world environment when Mario is falling."
+    (state <s> ^io <io>
+            ^mario-is-falling true) # Test that Mario thinks he is falling. (This structure is created by the previous rule above.)
+    (<io> ^output-link <ol>)
+    -->
+    # Send a message to the screen indicating Mario's thoughts
+    (<ol> ^message <message-new>)
+    (<message-new> ^value |I'm falling!|)}
+
+
+
+### Elaborate: mario-on-ground ###
+
+sp {elaborate*mario*on-ground
+    "This rule prints a message in the Mario world environment when Mario is falling."
+    (state <s> ^io <io>)
+    (<io> ^input-link <il>)
+    # This condition tests that Mario's vertical speed is 0, which means he is not jumping or falling
+    (<il> ^mario.body.y-speed 0.0)      # Note that we do NOT use the "==" symbol to test equality!
+    -->
+    # Elaborate a structure in working memory that indicates that Mario is falling
+    (<s> ^mario-on-ground true)}
+
+sp {elaborate*mario*output-message*on-ground
+    "This rule prints a message in the Mario world environment when Mario is not falling."
+    (state <s> ^io <io>
+            ^mario-on-ground true)   # Test that Mario thinks he is on the ground. (This structure is created by the previous rule above.)
+    (<io> ^output-link <ol>)
+    -->
+    # Send a message to the screen indicating Mario's thoughts
+    (<ol> ^message <message-new>)
+    (<message-new> ^value |I'm on the ground.|)}

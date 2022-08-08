@@ -1,0 +1,55 @@
+##### NOTE:
+# This modified form of the clean-output operator demonstrates how you can have multiple propose rules for the same operator. 
+# It has two different propose rules but still only one apply rule.
+# The idea is to clean up the "jump" command differently from other commands.
+# We wait to propose cleaning up the "jump" command until Mario has achieved maximum height from his jump ("holding down the jump key").
+# All other commands we clean up right away ("release the key after tapping it once").
+###########
+
+
+#####
+## OPERATOR: clean-output
+## Clean any commands that have been processed by the environment
+#####
+
+sp {propose*clean-output*non-jump
+    "Once the environment adds status complete to any non-jump command, remove that command"
+    (state <s> ^io.output-link <ol>)
+    (<ol> ^key-press <kp>)
+    (<kp> ^value <> A           # The "<>" symbol means "not equals". Test for any command that is not "jump"
+        ^status complete)
+    -->
+    # Propose the clear-output operator with '>' ("best") preference so it will be selected before the other operators
+    (<s> ^operator <o> + > =)
+    (<o> ^name clean-output
+        ^clean-command <kp>)}   # Attach the particular command to the operator. This way the apply rules know which command to clean up.
+
+sp {propose*clean-output*long-jump
+    "Long jump: Wait to remove the jump command until Mario has risen as far as he can"
+    (state <s> ^io.output-link.key-press <kp>   # Notice we can make a long dot-notation reference here
+            ^mario-is-falling true)             # Checks that Mario is no longer rising
+    # Check for a jump command that has been read by the game
+    (<kp> ^value A
+        ^status complete)
+    -->
+    # Propose the clear-output operator with '>' ("best") preference so it will be selected before the other operators
+    (<s> ^operator <o> + > =)
+    (<o> ^name clean-output
+        ^clean-command <kp>)}   # Attach the particular command to the operator. This way the apply rules know which command to clean up.
+
+sp {apply*clean-output
+    (state <s> ^operator <o>
+            ^io.output-link <ol>)
+    # Get the specific <cmd> command to remove. We we only remove this command from the output-link (otherwise we would clean up the jump command at the same time as we clean up move-right commands)
+    (<o> ^name clean-output
+        ^clean-command <cmd>)
+    # Find the output-link command that has the same <cmd> ID as was attached to the selected operator.
+    # This gives this rule access to the <cmd-name> attribute name, which we can show in the (write) command message.
+    (<ol> ^<cmd-name> <cmd>)
+    # Find the specific key of this output command, which we can show in the (write) command message.
+    (<cmd> ^value <val>)
+    -->
+    # Print a message to the debugger so we can easily see that the agent is clearing the structure
+    (write |CLEARING ^| <cmd-name> | | <cmd> |: | <val> (crlf))
+    # Remove the output command
+    (<ol> ^<cmd-name> <cmd> -)}

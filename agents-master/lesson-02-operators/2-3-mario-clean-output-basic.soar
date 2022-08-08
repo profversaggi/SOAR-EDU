@@ -1,0 +1,35 @@
+##### NOTE:
+# These rules define the (clean-output) operator.
+# This operator is proposed with "best" preference, so it happens before any operators that don't also have "best" preference (such as our movement operators).
+# When the agent selects this operator, it will clean up any commands given on its output-link that the game enviroment has finished processing.
+# (It is very important to clean up your output commands when you're done with them!)
+###########
+
+
+#####
+## OPERATOR: clean-output
+## Clean any commands that have been processed by the environment
+#####
+
+sp {propose*clean-output
+    "Once the environment adds status complete, remove that command"
+    (state <s> ^io.output-link <ol>)
+    # The Mario environment adds the following structure to our output once it has finished reading it
+    (<ol> ^key-press.status complete)
+    -->
+    # Propose the clear-output operator with '>' ("best") preference so it will be selected before the other operators
+    (<s> ^operator <o> + > =)
+    (<o> ^name clean-output)}
+
+sp {apply*clean-output
+    (state <s> ^operator.name clean-output
+            ^io.output-link <ol>)
+    # Test for a completed output command
+    (<ol> ^key-press <obj>)
+    (<obj> ^status complete
+            ^value <val>)
+    -->
+    # Remove the output command
+    (<ol> ^key-press <obj> -)
+    # Print a message to the debugger so we can easily see that the agent is clearing the structure
+    (write |CLEARING ^key-press | <val> (crlf))}

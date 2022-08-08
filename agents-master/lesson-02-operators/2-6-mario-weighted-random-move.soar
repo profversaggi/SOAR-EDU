@@ -1,0 +1,32 @@
+##### NOTE:
+# These preference rules add particular "numeric-indifferent" preferences (or "utility") to each of the movement operators defined in previous files.
+# (These rules only fire if the corresponding operators have already been proposed by other rules.)
+# When multiple "numeric-indifferent" operators are proposed and competing (that is, there is not a clear best choice due to other preferences like "best" or "worst"), 
+#    then Soar's decision making algorithm will select from among them probabilistically according to the numeric utility values. (Higher value means more likely to be selected.)
+# Play with the particular numbers below and see how it changes Mario's behavior!
+###########
+
+
+sp {prefer*mario*move-right
+    "Give a high relative weight to moving right"
+    (state <s> ^operator <o> +)     # The "+" here means we're testing for a *proposed* operator, not necessarily selected yet
+    (<o> ^name move-right)
+    -->
+    # Assign a numeric-indifference preference weight to this operator
+    (<s> ^operator <o> = 0.9)}
+
+sp {prefer*mario*jump
+    "Give a low relative weight to jumping"
+    (state <s> ^operator <o> +)     # The "+" here means we're testing for a *proposed* operator, not necessarily selected yet
+    (<o> ^name jump)
+    -->
+    # Assign a numeric-indifference preference weight to this operator
+    (<s> ^operator <o> = 0.1)}
+
+sp {prefer*mario*move-left
+    "Give a low relative weight to moving left"
+    (state <s> ^operator <o> +)     # The "+" here means we're testing for a *proposed* operator, not necessarily selected yet
+    (<o> ^name move-left)
+    -->
+    # Assign a numeric-indifference preference weight to this operator
+    (<s> ^operator <o> = 0.1)}

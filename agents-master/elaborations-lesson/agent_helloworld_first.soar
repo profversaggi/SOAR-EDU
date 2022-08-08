@@ -1,0 +1,5 @@
+sp {elaboration*hello-world
+    "This rule prints the hello world message. It has a single condition that will always be satisfied, and a single action that prints our message."
+    (state <s> ^superstate nil)
+    -->
+    (write |Hello World!|)}

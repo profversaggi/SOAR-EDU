@@ -1,0 +1,13 @@
+sp {elaboration*foo-bar*create
+    (state <s> ^superstate nil)
+    -->
+    (<s> ^foo bar
+        ^foo far
+        ^foo bar
+        ^food jar)}
+
+sp {elaboration*foo-bar*write
+    (state <s> ^foo <variable>)
+    -->
+    (write |^foo | <variable> | exists!| (crlf))
+    (interrupt)}

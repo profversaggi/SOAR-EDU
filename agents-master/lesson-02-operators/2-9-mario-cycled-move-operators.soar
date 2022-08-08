@@ -1,0 +1,75 @@
+##### NOTE:
+# These movement operators reference the timer-value defined in the 2-7-mario-cycle-timer.soar file.
+# Every time the timer reaches 0 and resets, one of these three movement operators could be proposed and selected.
+# These operator proposal rules also include numeric-indifferent preference values directly. They do not need to be added separately like shown in the 2-6-mario-weighted-random-move.soar file.
+###########
+
+
+#####
+## OPERATOR: move-right
+## Move Mario to the right by pressing the "right" key
+#####
+
+sp {propose*mario*move-right
+    "This rule proposes the (move-right) operator when the timer goes off"
+    (state <s> ^timer-ringing true      # Test that the timer has gone off and hasn't been reset yet
+            ^io.output-link <ol>)
+    (<ol> -^key-press.value right)
+    -->
+    (<s> ^operator <o> + = 0.5)         # Notice how the numeric-indifferent preference weight can be added here at the same time as the operator is proposed
+    (<o> ^name move-right)}
+
+sp {apply*mario*move-right
+    "This rule applies the (move-right) operator by sending the [key-press.value right] command to the environment"
+    (state <s> ^operator.name move-right
+            ^io.output-link <ol>)
+    -->
+    (<ol> ^key-press <kp-new>)
+    (<kp-new> ^value right)}
+
+
+#####
+## OPERATOR: move-left
+## Move Mario to the right by pressing the "left" key
+#####
+
+sp {propose*mario*move-left
+    "This rule proposes the (move-left) operator when the timer goes off"
+    (state <s> ^timer-ringing true      # Test that the timer has gone off and hasn't been reset yet
+            ^io.output-link <ol>)
+    (<ol> -^key-press.value left)
+    -->
+    (<s> ^operator <o> + = 0.05)         # Notice how the numeric-indifferent preference weight can be added here at the same time as the operator is proposed
+    (<o> ^name move-left)}
+
+sp {apply*mario*move-left
+    "This rule applies the (move-left) operator by sending the [key-press.value left] command to the environment"
+    (state <s> ^operator.name move-left
+            ^io.output-link <ol>)
+    -->
+    (<ol> ^key-press <kp-new>)
+    (<kp-new> ^value left)}
+
+
+#####
+## OPERATOR: jump
+## Make Mario jump by pressing the "A" (jump) key
+#####
+
+sp {propose*mario*jump
+    "This rule proposes the (jump) operator when the timer goes off"
+    (state <s> ^timer-ringing true      # Test that the timer has gone off and hasn't been reset yet
+            ^io.output-link <ol>
+            -^mario-is-falling true)
+    (<ol> -^key-press.value A)
+    -->
+    (<s> ^operator <o> + = 0.9)         # Notice how the numeric-indifferent preference weight can be added here at the same time as the operator is proposed
+    (<o> ^name jump)}
+
+sp {apply*mario*jump
+    "This rule applies the (jump) operator by sending the [key-press.value A] command to the environment"
+    (state <s> ^operator.name jump
+            ^io.output-link <ol>)
+    -->
+    (<ol> ^key-press <kp-new>)
+    (<kp-new> ^value A)}

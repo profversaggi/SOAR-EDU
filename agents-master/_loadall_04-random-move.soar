@@ -1,0 +1,10 @@
+# This line disables state no-change impasses. We'll introduce impasses later.
+soar wait-snc on
+
+# Load the rules that define our Mario agent
+load file "lesson-02-operators/2-1-mario-fall-state.soar"
+load file "lesson-02-operators/2-2-mario-right-jump-operators.soar"
+load file "lesson-02-operators/2-4-mario-clean-output-long-jump.soar"
+# (Adding new rules:)
+load file "lesson-02-operators/2-5-mario-left-operator.soar"
+load file "lesson-02-operators/2-6-mario-weighted-random-move.soar"

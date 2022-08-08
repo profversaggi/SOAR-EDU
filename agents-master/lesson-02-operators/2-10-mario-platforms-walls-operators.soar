@@ -1,0 +1,267 @@
+##### NOTE:
+# With these operators, the agent recognizes groups of blocks as either platforms or walls.
+# The agent can then use this awareness to plan its movement.
+# Applying these operators requires cascading apply rules within a single decision cycle.
+###########
+
+##### STRUCTURES
+# S1 ^platforms ID (1)              <-- This notation indicates that "platforms" points to an ID, and there should be exactly 1 such WME under the state object
+#       ^platform ID (0+)           <-- This notation indicates that "platform" points to an ID, and there should be 0 or more such WMES under the platforms object
+#           ^left-brick ID (1)
+#           ^right-brick ID (1)
+#           ^brick ID (1+)          <-- This notation indicates that "brick" points to an ID, and there should be 1 or more such WMES under the platform object
+#    ^walls ID (1)
+#       ^wall ID (0+)
+#           ^top-brick ID (1)
+#           ^bottom-brick ID (1)
+#           ^brick ID (1+)
+#####
+
+
+#####
+## OPERATOR: init [from 2-7-mario-init.soar]
+## Augment the (init) operator with another apply rule that initializes platform and wall structs.
+## This apply rule will fire at the same time as the "apply*mario*init" rule defined in 2-7-mario-init.soar.
+#####
+
+sp {apply*mario*init*platforms-walls
+    (state <s> ^operator.name init
+            -^platforms)
+    -->
+    # Create structs under which we can add platform and wall objects
+    # Note that when you create a new ID/object this way, Soar will use the first letter of the variable you write in the rule as the prefix for the ID.
+    (<s> ^platforms <ps-new>    # This will create an ID called "P1"
+        ^walls <ws-new>)}       # This will create an ID called "W1"
+
+
+#####
+## OPERATOR: recognize-platform
+## If there are groups of adjacent blocks that are clear above and touching left/right, which haven't been recognized as a platform, add them to a WM platform struct.
+#####
+
+sp {propose*mario*recognize-platform
+    "Propose a platform for each block that is clear above"
+    (state <s> ^io.input-link.bricks <bricks>
+            ^platforms <platforms>)
+    (<bricks> ^brick <b1>)
+    (<b1> -^touching-top )
+    # Test that this brick is not already part of a known platform struct
+    (<platforms> -^platform.brick <b1>)
+    -->
+    (<s> ^operator <o> + = >)
+    (<o> ^name recognize-platform
+        ^starting-brick <b1>)}
+
+sp {apply*mario*recognize-platform*1-init-platform
+    "Start the application by making a temp WME that will hold the platform struct as we build it"
+    (state <s> ^operator <o>
+            -^temp-platform)
+    (<o> ^name recognize-platform
+        ^starting-brick <b1>)
+    -->
+    (<s> ^temp-platform <p-new>)
+    # Initialize the platform to have a left and right edge of this starting brick, and to track that the starting brick as an included brick
+    (<p-new> ^left-brick <b1>
+            ^right-brick <b1>
+            ^brick <b1>)}
+
+sp {apply*mario*recognize-platform*2-grow-platform-right
+    "Once the temp platform is made, grow it to the right by moving the right-brick"
+    # (Note that this rule will fire in parallel with apply*mario*recognize-platform*2-grow-platform-left)
+    (state <s> ^operator.name recognize-platform
+                ^temp-platform <tplat>)
+    (<tplat> ^right-brick <b-right>)
+    # Test that the next brick to the right is also clear above
+    (<b-right> ^touching-right <b-right-next>)
+    (<b-right-next> -^touching-top)
+    -->
+    # Replace the old right edge with the new one, and mark the new brick as included in the platform
+    (<tplat> ^right-brick <b-right> -
+            ^right-brick <b-right-next>
+            ^brick <b-right-next>)}
+
+sp {apply*mario*recognize-platform*2-grow-platform-left
+    "Once the temp platform is made, grow it to the left by moving the left-brick"
+    # (Note that this rule will fire in parallel with apply*mario*recognize-platform*2-grow-platform-right)
+    (state <s> ^operator.name recognize-platform
+                ^temp-platform <tplat>)
+    (<tplat> ^left-brick <b-left>)
+    # Test that the next brick to the left is also clear above
+    (<b-left> ^touching-left <b-left-next>)
+    (<b-left-next> -^touching-top)
+    -->
+    # Replace the old left edge with the new one, and mark the new brick as included in the platform
+    (<tplat> ^left-brick <b-left> -
+            ^left-brick <b-left-next>
+            ^brick <b-left-next>)}
+
+sp {apply*mario*recognize-platform*3-finish-platform
+    "Once the temp platform is all built, link it as a proper platform. This makes the proposal conditions no longer satisfied, so the operator retracts."
+    (state <s> ^operator.name recognize-platform
+                ^temp-platform <tplat>
+                ^platforms <plats>)
+    # Test that there aren't more valid platform bricks beyond the current edges
+    (<tplat> ^left-brick <b-left>
+            ^right-brick <b-right>)
+    # Notice that the following two lines are the same as seen in apply*mario*recognize-platform*2-grow-platform-left,
+    #  except that they are surrounded with "-{...}", which tests for the negation of the enclosed conditions.
+    # In other words, this tests that there is NOT a <b-left-next> to the left of <b-left> which is clear above.
+    # If <b-left> is missing a ^touching-left neighbor, OR that neighbor does have a ^touching-top neighbor, then this condition will not be satisfied.
+    -{(<b-left> ^touching-left <b-left-next>)
+      (<b-left-next> -^touching-top)}
+    # Similarly test the right edge
+    -{(<b-right> ^touching-right <b-right-next>)
+      (<b-right-next> -^touching-top)}
+    -->
+    # Copy "temp-platform" to a platform under the "platforms" struct, and remove the temp-platform
+    (<plats> ^platform <tplat>)
+    (<s> ^temp-platform <tplat> -)}
+
+
+
+#####
+## OPERATOR: recognize-wall
+## If there are groups of adjacent blocks that are clear to either side and touching top/bottom, which haven't been recognized as a wall, add them to a WM wall struct.
+#####
+
+sp {propose*mario*recognize-wall
+    "Propose a wall for each block that is not enclosed on both left/right sides"
+    (state <s> ^io.input-link.bricks <bricks>
+            ^walls <walls>)
+    (<bricks> ^brick <b1>)
+    # Test that this brick is not enclosed on both sides (which would make it unnecessary for Mario to consider as a wall for his movement)
+    -{(<b1> ^touching-left <any-left>
+            ^touching-right <any-right>)}
+    # Test that this brick is not already part of a known wall struct
+    (<walls> -^wall.brick <b1>)
+    -->
+    (<s> ^operator <o> + = >)
+    (<o> ^name recognize-wall
+        ^starting-brick <b1>)}
+
+sp {apply*mario*recognize-wall*1-init-wall
+    "Start the application by making a temp WME that will hold the wall struct as we build it"
+    (state <s> ^operator <o>
+            -^temp-wall)
+    (<o> ^name recognize-wall
+        ^starting-brick <b1>)
+    -->
+    (<s> ^temp-wall <w-new>)
+    # Initialize the wall to have a tob and bottom of this starting brick, and to track that the starting brick as an included brick
+    (<w-new> ^top-brick <b1>
+            ^bottom-brick <b1>
+            ^brick <b1>)}
+
+sp {apply*mario*recognize-wall*2-grow-wall-down
+    "Once the temp wall is made, grow it downward by moving the bottom-brick"
+    # (Note that this rule will fire in parallel with apply*mario*recognize-wall*2-grow-wall-up)
+    (state <s> ^operator.name recognize-wall
+                ^temp-wall <twall>)
+    (<twall> ^bottom-brick <b-bottom>)
+    # Test that the next brick down is also clear on the left or the right
+    (<b-bottom> ^touching-bottom <b-bottom-next>)
+    -{(<b-bottom-next> ^touching-left <any-left>
+                        ^touching-right <any-right>)}
+    -->
+    # Replace the old bottom edge with the new one, and mark the new brick as included in the wall
+    (<twall> ^bottom-brick <b-bottom> -
+            ^bottom-brick <b-bottom-next>
+            ^brick <b-bottom-next>)}
+
+sp {apply*mario*recognize-wall*2-grow-wall-up
+    "Once the temp wall is made, grow it upward by moving the top-brick"
+    # (Note that this rule will fire in parallel with apply*mario*recognize-wall*2-grow-wall-down)
+    (state <s> ^operator.name recognize-wall
+                ^temp-wall <twall>)
+    (<twall> ^top-brick <b-top>)
+    # Test that the next brick up is also clear on the left or the right
+    (<b-top> ^touching-top <b-top-next>)
+    -{(<b-top-next> ^touching-left <any-left>
+                    ^touching-right <any-right>)}
+    -->
+    # Replace the old top edge with the new one, and mark the new brick as included in the wall
+    (<twall> ^top-brick <b-top> -
+            ^top-brick <b-top-next>
+            ^brick <b-top-next>)}
+
+sp {apply*mario*recognize-wall*3-finish-wall
+    "Once the temp wall is all built, link it as a proper wall. This makes the proposal conditions no longer satisfied, so the operator retracts."
+    (state <s> ^operator.name recognize-wall
+                ^temp-wall <twall>
+                ^walls <plats>)
+    # Test that there aren't more valid wall bricks beyond the current edges
+    (<twall> ^top-brick <b-top>
+            ^bottom-brick <b-bottom>)
+    # As with (recognize-platform), test that there is NOT a <b-top-next> above <b-top> that is clear on either side.
+    # Again, this is done by wrapping the test we used in the above rule in a negation bracket: -{} 
+    -{(<b-top> ^touching-top <b-top-next>)
+      -{(<b-top-next> ^touching-left <any-left>
+                      ^touching-right <any-right>)}}
+    # Similarly test the bottom edge
+    -{(<b-bottom> ^touching-bottom <b-bottom-next>)
+      -{(<b-bottom-next> ^touching-left <any-left>
+                         ^touching-right <any-right>)}}
+    -->
+    # Copy "temp-wall" to a wall under the "walls" struct, and remove the temp-wall
+    (<plats> ^wall <twall>)
+    (<s> ^temp-wall <twall> -)}
+
+
+
+##### 
+## clean-platform 
+#####
+sp {set*mario*clean-platform
+    "When a platform leaves the screen view, remove it from WM"
+    # Notice this ":o-support" flag. 
+    # Soar will give this rule's actions o-support, which means they will be permanent changes to WM.
+    # This rule can fire in the apply phase of any decision cycle for any operator
+    :o-support
+    (state <s> ^platforms <plats>
+            ^io.input-link.bricks <bricks>)
+    # Check for a platform brick that can't be found on the input link
+    (<plats> ^platform <p>)
+    (<p> ^brick <b>)
+    (<bricks> -^brick <b>)
+    -->
+    # Remove the platform from WM
+    (<plats> ^platform <p> -)}
+
+
+##### 
+## clean-wall
+#####
+sp {set*mario*clean-wall*invisible
+    "When a wall leaves the screen view, remove it from WM"
+    # Notice this ":o-support" flag. 
+    # Soar will give this rule's actions o-support, which means they will be permanent changes to WM.
+    # This rule can fire in the apply phase of any decision cycle for any operator
+    :o-support
+    (state <s> ^walls <walls>
+            ^io.input-link.bricks <bricks>)
+    # Check for a wall brick that can't be found on the input link
+    (<walls> ^wall <w>)
+    (<w> ^brick <b>)
+    (<bricks> -^brick <b>)
+    -->
+    # Remove the wall from WM
+    (<walls> ^wall <w> -)}
+
+## NOTE: As Mario sees blocks appearing on the screen edge, he will not at first be able to tell whether a wall is open on one side.
+## This rule lets Mario remove a wall from his WM (so he can reconsider the wall made by those blocks if need be) after he gains more information about the world.
+sp {set*mario*clean-wall*revealed-blocked
+    "When a wall is shown to be completely enclosed, remove it from WM as irrelevant"
+    # Notice this ":o-support" flag. 
+    # Soar will give this rule's actions o-support, which means they will be permanent changes to WM.
+    # This rule can fire in the apply phase of any decision cycle for any operator
+    :o-support
+    (state <s> ^walls <walls>
+            ^io.input-link.bricks <bricks>)
+    # Check for a wall brick that is completely surrounded by other bricks
+    (<walls> ^wall <w>)
+    (<w> ^brick <b>)
+    (<b> ^touching-left <any-left>
+        ^touching-right <any-right>)
+    -->
+    # Remove the wall from WM. It might still be a valid wall if only one brick is invalid, but Mario can re-recognize the wall correctly later.
+    (<walls> ^wall <w> -)}
