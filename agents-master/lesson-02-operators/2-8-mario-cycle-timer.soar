@@ -42,13 +42,13 @@ sp {propose*mario*idle-increment-timer
     "Propose an idle-decrement-timer operator with worst preference in case nothing else was proposed, so the timer can decrement every cycle"
     (state <s> ^current-dc <dc>)
     -->
-    (<s> ^operator <o> + < =)               # Use "worst" preference so that other operators can be selected instead of this one
+    (<s> ^operator <o> + < =)           # Use "worst" preference so that other operators can be selected instead of this one
     (<o> ^name idle-increment-timer)}
 
 sp {apply-any*mario*update-current-dc
     "Refresh the current decision cycle count"
     (state <s> ^operator <o-any>
-            ^current-dc <dc>)        # To reference the variable name and also test that it is > 0, enclose both tests inside "{}" brackets
+            ^current-dc <dc>)           # To reference the variable name and also test that it is > 0, enclose both tests inside "{}" brackets
     -->
     (<s> ^current-dc <dc> -             # The "-" here tells Soar to remove this WME
         ^current-dc (dc))}              # The (dc) structure here is a RHS function that gets the current decision cycle number (as an integer).

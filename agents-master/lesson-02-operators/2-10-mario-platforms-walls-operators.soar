@@ -219,10 +219,10 @@ sp {set*mario*clean-platform
     :o-support
     (state <s> ^platforms <plats>
             ^io.input-link.bricks <bricks>)
-    # Check for a platform brick that can't be found on the input link
+    # Check if no platform bricks can be found on the input link
     (<plats> ^platform <p>)
-    (<p> ^brick <b>)
-    (<bricks> -^brick <b>)
+    -{(<p> ^brick <b>)
+      (<bricks> ^brick <b>)}
     -->
     # Remove the platform from WM
     (<plats> ^platform <p> -)}
@@ -239,10 +239,10 @@ sp {set*mario*clean-wall*invisible
     :o-support
     (state <s> ^walls <walls>
             ^io.input-link.bricks <bricks>)
-    # Check for a wall brick that can't be found on the input link
+    # Check if no wall bricks can be found on the input link
     (<walls> ^wall <w>)
-    (<w> ^brick <b>)
-    (<bricks> -^brick <b>)
+    -{(<w> ^brick <b>)
+      (<bricks> ^brick <b>)}
     -->
     # Remove the wall from WM
     (<walls> ^wall <w> -)}
