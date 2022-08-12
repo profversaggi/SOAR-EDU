@@ -12,7 +12,7 @@
 #####
 
 sp {propose*mario*move-right
-    "This rule proposes the (move-right) operator when Mario is not falling"
+    "This rule proposes the (move-right) operator"
     (state <s> ^io.output-link <ol>)        # Notice the shorter "dot notation" that we can use to referece the output link
     (<ol> -^key-press.value right)          # The minus symbol means this is a negative condition: We test that the output-link does NOT already have a move-right command
     -->

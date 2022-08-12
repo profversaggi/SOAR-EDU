@@ -22,4 +22,4 @@ sp {apply*mario*init
     (state <s> ^operator.name init)
     -->
     # Initialize the state name
-    (<s> ^name mario)}
+    (<s> ^name mario-game)}

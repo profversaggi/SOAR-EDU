@@ -13,15 +13,7 @@ sp {prefer*mario*move-right
     (<o> ^name move-right)
     -->
     # Assign a numeric-indifference preference weight to this operator
-    (<s> ^operator <o> = 0.9)}
-
-sp {prefer*mario*jump
-    "Give a low relative weight to jumping"
-    (state <s> ^operator <o> +)     # The "+" here means we're testing for a *proposed* operator, not necessarily selected yet
-    (<o> ^name jump)
-    -->
-    # Assign a numeric-indifference preference weight to this operator
-    (<s> ^operator <o> = 0.1)}
+    (<s> ^operator <o> = 0.5)}
 
 sp {prefer*mario*move-left
     "Give a low relative weight to moving left"
@@ -29,4 +21,12 @@ sp {prefer*mario*move-left
     (<o> ^name move-left)
     -->
     # Assign a numeric-indifference preference weight to this operator
-    (<s> ^operator <o> = 0.1)}
+    (<s> ^operator <o> = 0.05)}
+
+sp {prefer*mario*jump
+    "Give a low relative weight to jumping"
+    (state <s> ^operator <o> +)     # The "+" here means we're testing for a *proposed* operator, not necessarily selected yet
+    (<o> ^name jump)
+    -->
+    # Assign a numeric-indifference preference weight to this operator
+    (<s> ^operator <o> = 0.9)}

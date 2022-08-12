@@ -11,7 +11,8 @@
 # All other WMEs referenced in this file are only used by the rules in this file.
 sp {elaborate*mario*timer-ringing
     "If the current decision cycle has reached or passed the timer value, ring the timer"
-    (state <s> ^timer-dc <dc>
+    (state <s> ^name mario-game     # It is good practice to test for our state name in non-apply rules
+            ^timer-dc <dc>
             ^current-dc >= <dc>)
     -->
     (<s> ^timer-ringing true)}
@@ -40,7 +41,8 @@ sp {apply*mario*init*timer
 
 sp {propose*mario*idle-increment-timer
     "Propose an idle-decrement-timer operator with worst preference in case nothing else was proposed, so the timer can decrement every cycle"
-    (state <s> ^current-dc <dc>)
+    (state <s> ^name mario-game
+                ^current-dc <dc>)
     -->
     (<s> ^operator <o> + < =)           # Use "worst" preference so that other operators can be selected instead of this one
     (<o> ^name idle-increment-timer)}
